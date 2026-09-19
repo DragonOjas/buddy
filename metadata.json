@@ -1,0 +1,6 @@
+{
+  "name": "Buddy",
+  "description": "Your AI Friend, Teacher, Coding Partner, and Study Coach with real-time chat, voice, memory, and smart intent routing.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
