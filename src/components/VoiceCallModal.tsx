@@ -264,6 +264,9 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                 mimeType: recorder.mimeType || 'audio/webm'
               })
             });
+            if (!res.ok) {
+              throw new Error(`Transcription API returned ${res.status}`);
+            }
             const data = await res.json();
             const transcribed = data.transcript?.trim();
             if (transcribed) {
@@ -277,7 +280,12 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
             }
           } catch (e: any) {
             console.error('Server transcribe error:', e);
-            startMic();
+            setMicErrorMessage('Cloud transcription is unavailable. Use Chrome speech recognition or type your question below.');
+            setInterimText('');
+            setCallState('listening_query');
+            if (SpeechManager.isSpeechRecognitionSupported()) {
+              startMic(true);
+            }
           }
         };
       };
@@ -401,6 +409,13 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       setTimeout(() => {
         if (isMountedRef.current && isOpen && !isMuted) startMic();
       }, 2000);
+      return;
+    }
+
+    if (!SpeechManager.isSpeechSynthesisSupported()) {
+      if (isMountedRef.current && isOpen && !isMuted && SpeechManager.isSpeechRecognitionSupported()) {
+        startMic();
+      }
       return;
     }
 

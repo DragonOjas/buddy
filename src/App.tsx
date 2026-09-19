@@ -309,7 +309,13 @@ export default function App() {
       });
 
       if (!response.ok || !response.body) {
-        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        let details = '';
+        try {
+          details = (await response.text()).slice(0, 240);
+        } catch {
+          // Keep the HTTP status when the response body is unavailable.
+        }
+        throw new Error(`Chat API ${response.status}: ${details || response.statusText}`);
       }
 
       const reader = response.body.getReader();
@@ -395,7 +401,8 @@ export default function App() {
       }
     } catch (error: any) {
       console.error('Chat stream failed:', error);
-      const fallbackContent = `Hey ${user.name}! I'm right here with you. What topic would you like to tackle together?`;
+      const errorMessage = error?.message || 'The chat service is unavailable.';
+      const fallbackContent = `I couldn't reach Buddy's AI service right now. ${errorMessage}`;
       setMessages(prev =>
         prev.map(m =>
           m.id === assistantMsgId
