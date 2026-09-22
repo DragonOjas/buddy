@@ -873,30 +873,4 @@ app.post('/api/voice/transcribe', async (req, res) => {
   }
 });
 
-// Vite middleware for development & static serving for production
-async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Buddy AI Server running on http://0.0.0.0:${PORT}`);
-  });
-}
-
 export default app;
-
-if (!process.env.VERCEL && !process.env.NOW_REGION) {
-  startServer();
-}
