@@ -9,6 +9,7 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+const VOICE_GEMINI_MODEL = 'gemini-3.6-flash';
 
 // Middleware for parsing JSON with generous limit for images/PDF attachments
 app.use(express.json({ limit: '50mb' }));
@@ -736,7 +737,7 @@ CRITICAL RULES FOR REAL-TIME VOICE CALL:
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         response = await ai.models.generateContent({
-          model: GEMINI_MODEL,
+          model: VOICE_GEMINI_MODEL,
           contents,
           config: {
             systemInstruction,

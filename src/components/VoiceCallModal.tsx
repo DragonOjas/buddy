@@ -341,9 +341,11 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to get voice reply');
+        if (!data.reply) {
+          throw new Error(data.error || 'Failed to get voice reply');
+        }
       }
       const replyText = data.reply || "I'm right here with you! Tell me more.";
 
