@@ -713,14 +713,30 @@ CRITICAL RULES FOR REAL-TIME VOICE CALL:
     }
     contents.push({ role: 'user', parts: [{ text: message }] });
 
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents,
-      config: {
-        systemInstruction,
-        temperature: 0.8,
-      },
-    });
+    let response;
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        response = await ai.models.generateContent({
+          model: GEMINI_MODEL,
+          contents,
+          config: {
+            systemInstruction,
+            temperature: 0.8,
+          },
+        });
+        break;
+      } catch (err) {
+        lastError = err;
+        if (attempt === 0) {
+          await new Promise(resolve => setTimeout(resolve, 700));
+        }
+      }
+    }
+
+    if (!response) {
+      throw lastError || new Error('Voice response unavailable');
+    }
 
     const reply = response.text?.trim() || "Hey! I heard you loud and clear. What would you like to explore next?";
     

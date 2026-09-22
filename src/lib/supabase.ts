@@ -67,6 +67,7 @@ export async function supabaseSignUp(
       email,
       password: pass,
       options: {
+        emailRedirectTo: window.location.origin,
         data: {
           name: meta?.name || 'Student',
           grade: meta?.grade || 'High School',

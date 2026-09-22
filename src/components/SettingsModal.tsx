@@ -1,59 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, VoiceSettings, Memory } from '../types';
+import { UserProfile, VoiceSettings } from '../types';
 import { storage } from '../lib/storage';
 import { SpeechManager } from '../lib/voice';
-import { resetSupabaseClient } from '../lib/supabase';
-import schemaSql from '../lib/schema.sql?raw';
 import {
   X,
   User,
   Volume2,
-  Moon,
-  Brain,
-  Download,
-  Trash2,
-  Database,
   Check,
-  Copy,
-  Plus,
-  Star,
-  ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onProfileUpdated: () => void;
-  onOpenMemoryVault: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
   onProfileUpdated,
-  onOpenMemoryVault,
 }) => {
   const [user, setUser] = useState<UserProfile>(storage.getUser());
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>(storage.getVoiceSettings());
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [activeTab, setActiveTab] = useState<'profile' | 'voice' | 'memory' | 'database' | 'data'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'voice'>('profile');
   const [savedSuccess, setSavedSuccess] = useState(false);
-  
-  // Supabase states
-  const [supabaseUrl, setSupabaseUrl] = useState(localStorage.getItem('buddy_supabase_url') || '');
-  const [supabaseAnonKey, setSupabaseAnonKey] = useState(localStorage.getItem('buddy_supabase_anon_key') || '');
-  const [copiedSql, setCopiedSql] = useState(false);
-
-  // Quick memory add in settings
-  const [newMemoryText, setNewMemoryText] = useState('');
-  const [newMemoryImp, setNewMemoryImp] = useState<1 | 2 | 3 | 4 | 5>(4);
-  const [memories, setMemories] = useState<Memory[]>(storage.getMemories());
 
   useEffect(() => {
     if (isOpen) {
       setUser(storage.getUser());
       setVoiceSettings(storage.getVoiceSettings());
-      setMemories(storage.getMemories());
       const voices = SpeechManager.getVoices();
       setAvailableVoices(voices);
     }
@@ -66,65 +43,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     storage.saveUser(user);
     storage.saveVoiceSettings(voiceSettings);
 
-    localStorage.setItem('buddy_supabase_url', supabaseUrl.trim());
-    localStorage.setItem('buddy_supabase_anon_key', supabaseAnonKey.trim());
-    resetSupabaseClient();
-
     setSavedSuccess(true);
     onProfileUpdated();
     setTimeout(() => setSavedSuccess(false), 2000);
   };
 
-  const handleExportChats = () => {
-    const chats = storage.getChats();
-    const exportData = chats.map(c => ({
-      ...c,
-      messages: storage.getMessages(c.id),
-    }));
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `buddy-chats-export-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleClearAllData = () => {
-    if (window.confirm('Are you sure you want to reset your Buddy profile, chat history, and memories?')) {
-      localStorage.clear();
-      window.location.reload();
-    }
-  };
-
-  const handleAddMemory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMemoryText.trim()) return;
-    const added = storage.addMemory(newMemoryText.trim(), newMemoryImp, 'general');
-    setMemories([added, ...memories]);
-    setNewMemoryText('');
-  };
-
-  const handleDeleteMemory = (id: string) => {
-    storage.deleteMemory(id);
-    setMemories(memories.filter(m => m.id !== id));
-  };
-
-  const handleCopySqlSchema = () => {
-    navigator.clipboard.writeText(schemaSql);
-    setCopiedSql(true);
-    setTimeout(() => setCopiedSql(false), 2000);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-[#0f1422] border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[#0f1422] border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-[#141a2e]/60">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            Settings & Preferences
-          </h2>
+          <div>
+            <h2 className="text-lg font-bold text-white">Settings & Preferences</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Shape Buddy around the way you learn.</p>
+          </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
@@ -133,71 +65,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-800 bg-slate-900/50 px-4 text-xs font-semibold overflow-x-auto">
+        <div className="flex flex-1 min-h-0 flex-col sm:flex-row">
+          {/* Vertical Navigation */}
+          <nav className="w-full sm:w-48 shrink-0 border-b sm:border-b-0 sm:border-r border-slate-800 bg-[#0b1020] p-3 space-y-1">
           <button
             onClick={() => setActiveTab('profile')}
-            className={`py-3 px-3 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+            className={`w-full rounded-xl px-3 py-3 text-left transition-colors flex items-center gap-3 ${
               activeTab === 'profile'
-                ? 'border-purple-500 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-purple-500/15 text-purple-200 border border-purple-500/30'
+                : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200 border border-transparent'
             }`}
           >
-            <User className="w-4 h-4" />
-            Profile & Goals
+            <User className="w-4 h-4 shrink-0" />
+            <span><strong className="block text-xs">Profile</strong><small className="font-normal text-[10px] opacity-70">Goals and interests</small></span>
           </button>
 
           <button
             onClick={() => setActiveTab('voice')}
-            className={`py-3 px-3 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+            className={`w-full rounded-xl px-3 py-3 text-left transition-colors flex items-center gap-3 ${
               activeTab === 'voice'
-                ? 'border-purple-500 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-purple-500/15 text-purple-200 border border-purple-500/30'
+                : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200 border border-transparent'
             }`}
           >
-            <Volume2 className="w-4 h-4" />
-            Voice & Speech
+            <Volume2 className="w-4 h-4 shrink-0" />
+            <span><strong className="block text-xs">Voice & Speech</strong><small className="font-normal text-[10px] opacity-70">Talk to Buddy</small></span>
           </button>
-
-          <button
-            onClick={() => setActiveTab('memory')}
-            className={`py-3 px-3 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'memory'
-                ? 'border-purple-500 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Brain className="w-4 h-4" />
-            Memories ({memories.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab('database')}
-            className={`py-3 px-3 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'database'
-                ? 'border-purple-500 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Database className="w-4 h-4" />
-            Supabase DB
-          </button>
-
-          <button
-            onClick={() => setActiveTab('data')}
-            className={`py-3 px-3 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'data'
-                ? 'border-purple-500 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Download className="w-4 h-4" />
-            Data & Export
-          </button>
-        </div>
+          <div className="hidden sm:block mt-auto p-3 rounded-xl bg-slate-900/70 border border-slate-800 text-[10px] text-slate-500 leading-relaxed">
+            <Sparkles className="w-4 h-4 text-purple-400 mb-2" />
+            Your settings are saved automatically where possible.
+          </div>
+          </nav>
 
         {/* Tab Content */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 text-sm text-slate-300">
+        <div className="p-5 sm:p-7 overflow-y-auto space-y-5 flex-1 text-sm text-slate-300">
           {activeTab === 'profile' && (
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div>
@@ -375,160 +276,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {activeTab === 'memory' && (
-            <div className="space-y-4">
-              <div className="p-3 bg-purple-950/20 border border-purple-500/30 rounded-xl text-xs text-purple-200">
-                Buddy continuously remembers facts, milestones, and goals from your conversations to personalize future advice.
-              </div>
-
-              {/* Add Memory Form */}
-              <form onSubmit={handleAddMemory} className="flex gap-2">
-                <input
-                  type="text"
-                  value={newMemoryText}
-                  onChange={e => setNewMemoryText(e.target.value)}
-                  placeholder="Add a custom memory (e.g. Taking SAT next month)..."
-                  className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500"
-                />
-                <select
-                  value={newMemoryImp}
-                  onChange={e => setNewMemoryImp(parseInt(e.target.value) as any)}
-                  className="px-2 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-purple-300"
-                >
-                  <option value={5}>Lvl 5 (Core)</option>
-                  <option value={4}>Lvl 4 (Long-term)</option>
-                  <option value={3}>Lvl 3 (Important)</option>
-                  <option value={2}>Lvl 2 (Useful)</option>
-                  <option value={1}>Lvl 1 (Temp)</option>
-                </select>
-                <button
-                  type="submit"
-                  className="px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </form>
-
-              {/* Memory List */}
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {memories.map(m => (
-                  <div
-                    key={m.id}
-                    className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start justify-between gap-3 text-xs"
-                  >
-                    <div className="flex-1">
-                      <div className="text-slate-200">{m.memory}</div>
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500">
-                        <span className="text-purple-400 font-medium">Importance: {m.importance}/5</span>
-                        <span>•</span>
-                        <span>{new Date(m.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteMemory(m.id)}
-                      className="text-slate-500 hover:text-red-400 p-1 transition-colors"
-                      title="Delete memory"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'database' && (
-            <div className="space-y-4">
-              <div className="p-3.5 bg-blue-950/20 border border-blue-500/30 rounded-xl text-xs text-blue-200">
-                <p className="font-semibold text-white mb-1">What you need to connect Supabase & Auth:</p>
-                <ol className="list-decimal list-inside space-y-1 text-slate-300 text-[11px]">
-                  <li><strong>Project URL:</strong> Found under Project Settings → API (e.g. <code className="text-cyan-300">https://xyz.supabase.co</code>)</li>
-                  <li><strong>Anon Public Key:</strong> The public <code className="text-cyan-300">anon</code> key under Project Settings → API</li>
-                  <li><strong>Auth Providers:</strong> In Authentication → Providers, enable <em>Email</em> or <em>Google OAuth</em></li>
-                  <li><strong>Site URL / Redirects:</strong> Under Auth → URL Configuration, add this app's URL</li>
-                  <li><strong>Database Tables:</strong> Copy the SQL Schema below and run it in the Supabase SQL Editor</li>
-                </ol>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">
-                  VITE_SUPABASE_URL
-                </label>
-                <input
-                  type="text"
-                  value={supabaseUrl}
-                  onChange={e => setSupabaseUrl(e.target.value)}
-                  placeholder="https://your-project.supabase.co"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">
-                  VITE_SUPABASE_ANON_KEY
-                </label>
-                <input
-                  type="password"
-                  value={supabaseAnonKey}
-                  onChange={e => setSupabaseAnonKey(e.target.value)}
-                  placeholder="eyJhbGciOiJIUzI1NiIsIn..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs"
-                />
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={handleCopySqlSchema}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors"
-                >
-                  {copiedSql ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedSql ? 'SQL Copied!' : 'Copy Database SQL Schema'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSaveProfile}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs font-semibold"
-                >
-                  Save Supabase Settings
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'data' && (
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-white text-sm">Export Conversations</div>
-                  <div className="text-xs text-slate-400">Download all your chat transcripts, code snippets, and study notes as JSON.</div>
-                </div>
-                <button
-                  onClick={handleExportChats}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Export JSON
-                </button>
-              </div>
-
-              <div className="p-4 rounded-xl bg-red-950/20 border border-red-500/30 flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-red-300 text-sm">Reset Account & Clear Data</div>
-                  <div className="text-xs text-red-400/80">Permanently clears your stored local memories, streak logs, and chat sessions.</div>
-                </div>
-                <button
-                  onClick={handleClearAllData}
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Reset
-                </button>
-              </div>
-            </div>
-          )}
         </div>
+      </div>
       </div>
     </div>
   );

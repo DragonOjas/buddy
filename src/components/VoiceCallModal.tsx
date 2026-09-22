@@ -50,7 +50,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
   const [voiceVolume, setVoiceVolume] = useState(true);
-  const [requireWakeWord, setRequireWakeWord] = useState(false);
+  const [requireWakeWord, setRequireWakeWord] = useState(true);
   const [micErrorMessage, setMicErrorMessage] = useState<string | null>(null);
   const [isDirectRecording, setIsDirectRecording] = useState(false);
   const [typedInput, setTypedInput] = useState('');
@@ -88,8 +88,12 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       if (initialQuery && initialQuery.trim()) {
         handleUserSpoken(initialQuery.trim());
       } else {
-        const greeting = `Hey ${user.name}! I'm listening. Say "Hey Buddy" followed by your question, or tap to speak!`;
-        speakBuddyReply(greeting, true);
+        setCallState('waiting_wake_word');
+        window.setTimeout(() => {
+          if (isMountedRef.current && isOpen && !isMuted) {
+            startMic();
+          }
+        }, 100);
       }
     } else {
       cleanupCall();

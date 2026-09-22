@@ -717,10 +717,6 @@ export default function App() {
           setVoiceSettings(storage.getVoiceSettings());
           setMemories(storage.getMemories());
         }}
-        onOpenMemoryVault={() => {
-          setIsSettingsOpen(false);
-          requireAuth('Memory Vault', () => setCurrentView('memory_vault'));
-        }}
       />
 
       {/* Practice Quiz Modal */}
