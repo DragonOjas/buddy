@@ -4,6 +4,7 @@ export type Mode =
   | 'homework'
   | 'teacher'
   | 'coding'
+  | 'python'
   | 'exam_prep'
   | 'search';
 

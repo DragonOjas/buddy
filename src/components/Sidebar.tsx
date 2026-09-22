@@ -74,6 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'homework', label: 'Homework Helper', icon: BookOpen, color: 'text-amber-400', desc: 'Step-by-step guidance' },
     { id: 'teacher', label: 'Teacher Mode', icon: GraduationCap, color: 'text-indigo-400', desc: 'Concepts & analogies' },
     { id: 'coding', label: 'Coding Partner', icon: Code2, color: 'text-blue-400', desc: 'Debug, code, review' },
+    { id: 'python', label: 'Python Tutor', icon: Code2, color: 'text-emerald-400', desc: 'Python + data science + scripting' },
     { id: 'exam_prep', label: 'Exam Prep', icon: CalendarCheck, color: 'text-emerald-400', desc: 'Study plans & mocks' },
     { id: 'search', label: 'Web Search', icon: Search, color: 'text-cyan-400', desc: 'Grounding with citations' },
   ];

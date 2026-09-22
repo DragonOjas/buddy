@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS public.users (
   goals TEXT DEFAULT 'Excel in exams and build cool AI projects',
   favorite_subjects TEXT DEFAULT 'Computer Science, Math',
   interests TEXT DEFAULT 'Coding, Science, Gaming',
-  streak_days INTEGER DEFAULT 1,
-  longest_streak INTEGER DEFAULT 1,
+  streak_days INTEGER DEFAULT 0,
+  longest_streak INTEGER DEFAULT 0,
   total_study_minutes INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -60,8 +60,8 @@ CREATE TABLE IF NOT EXISTS public.study_progress (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   subject TEXT NOT NULL,
-  score INTEGER NOT NULL DEFAULT 85 CHECK (score BETWEEN 0 AND 100),
-  topics_covered INTEGER DEFAULT 1,
+  score INTEGER NOT NULL DEFAULT 0 CHECK (score BETWEEN 0 AND 100),
+  topics_covered INTEGER DEFAULT 0,
   last_studied TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS public.contributions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   date DATE NOT NULL DEFAULT CURRENT_DATE,
-  activity_count INTEGER DEFAULT 1,
+  activity_count INTEGER DEFAULT 0,
   UNIQUE(user_id, date)
 );
 

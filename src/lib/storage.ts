@@ -107,6 +107,21 @@ export const generateInitialContributions = (): DayContribution[] => {
   return contributions;
 };
 
+const getActiveUserId = (): string => {
+  try {
+    const stored = localStorage.getItem('buddy_user');
+    if (stored) return JSON.parse(stored).id || 'usr_student';
+  } catch (e) {
+    console.error(e);
+  }
+  return 'usr_student';
+};
+
+const getScopedKey = (key: string): string => {
+  const userId = getActiveUserId();
+  return userId === 'usr_student' ? key : `${key}_${userId}`;
+};
+
 // LocalStorage helpers with automatic JSON deserialization
 export const storage = {
   getUser: (): UserProfile => {
@@ -137,7 +152,7 @@ export const storage = {
 
   getChats: (): Chat[] => {
     try {
-      const stored = localStorage.getItem('buddy_chats');
+      const stored = localStorage.getItem(getScopedKey('buddy_chats'));
       if (stored) {
         const parsed: Chat[] = JSON.parse(stored);
         const filtered = parsed.filter(c => c.user_id !== 'usr_default_student');
@@ -150,7 +165,7 @@ export const storage = {
   },
 
   saveChats: (chats: Chat[]) => {
-    localStorage.setItem('buddy_chats', JSON.stringify(chats));
+    localStorage.setItem(getScopedKey('buddy_chats'), JSON.stringify(chats));
   },
 
   createChat: (title: string, mode: Mode = 'auto'): Chat => {
@@ -172,12 +187,12 @@ export const storage = {
   deleteChat: (chatId: string) => {
     const chats = storage.getChats().filter(c => c.id !== chatId);
     storage.saveChats(chats);
-    localStorage.removeItem(`buddy_messages_${chatId}`);
+    localStorage.removeItem(getScopedKey(`buddy_messages_${chatId}`));
   },
 
   getMessages: (chatId: string): Message[] => {
     try {
-      const stored = localStorage.getItem(`buddy_messages_${chatId}`);
+      const stored = localStorage.getItem(getScopedKey(`buddy_messages_${chatId}`));
       if (stored) return JSON.parse(stored);
     } catch (e) {
       console.error(e);
@@ -186,7 +201,7 @@ export const storage = {
   },
 
   saveMessages: (chatId: string, messages: Message[]) => {
-    localStorage.setItem(`buddy_messages_${chatId}`, JSON.stringify(messages));
+    localStorage.setItem(getScopedKey(`buddy_messages_${chatId}`), JSON.stringify(messages));
     
     // Update messages count in chat object
     const chats = storage.getChats().map(c => 
@@ -259,7 +274,7 @@ export const storage = {
 
   getMemories: (): Memory[] => {
     try {
-      const stored = localStorage.getItem('buddy_memories');
+      const stored = localStorage.getItem(getScopedKey('buddy_memories'));
       if (stored) {
         const parsed: Memory[] = JSON.parse(stored);
         const filtered = parsed.filter(m => m.user_id !== 'usr_default_student');
@@ -272,7 +287,7 @@ export const storage = {
   },
 
   saveMemories: (memories: Memory[]) => {
-    localStorage.setItem('buddy_memories', JSON.stringify(memories));
+    localStorage.setItem(getScopedKey('buddy_memories'), JSON.stringify(memories));
   },
 
   addMemory: (memoryText: string, importance: 1 | 2 | 3 | 4 | 5 = 3, category: any = 'general'): Memory => {
@@ -308,7 +323,7 @@ export const storage = {
 
   getStudyProgress: (): StudyProgress[] => {
     try {
-      const stored = localStorage.getItem('buddy_progress');
+      const stored = localStorage.getItem(getScopedKey('buddy_progress'));
       if (stored) {
         const parsed: StudyProgress[] = JSON.parse(stored);
         const filtered = parsed.filter(p => p.user_id !== 'usr_default_student');
@@ -321,12 +336,12 @@ export const storage = {
   },
 
   saveStudyProgress: (progress: StudyProgress[]) => {
-    localStorage.setItem('buddy_progress', JSON.stringify(progress));
+    localStorage.setItem(getScopedKey('buddy_progress'), JSON.stringify(progress));
   },
 
   getAchievements: (): Achievement[] => {
     try {
-      const stored = localStorage.getItem('buddy_achievements');
+      const stored = localStorage.getItem(getScopedKey('buddy_achievements'));
       if (stored) return JSON.parse(stored);
     } catch (e) {
       console.error(e);
@@ -335,18 +350,18 @@ export const storage = {
   },
 
   saveAchievements: (achievements: Achievement[]) => {
-    localStorage.setItem('buddy_achievements', JSON.stringify(achievements));
+    localStorage.setItem(getScopedKey('buddy_achievements'), JSON.stringify(achievements));
   },
 
   getContributions: (): DayContribution[] => {
     try {
-      const stored = localStorage.getItem('buddy_contributions');
+      const stored = localStorage.getItem(getScopedKey('buddy_contributions'));
       if (stored) return JSON.parse(stored);
     } catch (e) {
       console.error(e);
     }
     const initial = generateInitialContributions();
-    localStorage.setItem('buddy_contributions', JSON.stringify(initial));
+    localStorage.setItem(getScopedKey('buddy_contributions'), JSON.stringify(initial));
     return initial;
   },
 
@@ -365,7 +380,7 @@ export const storage = {
       contributions.push({ date: todayStr, count: 1, level: 1 });
     }
     
-    localStorage.setItem('buddy_contributions', JSON.stringify(contributions));
+    localStorage.setItem(getScopedKey('buddy_contributions'), JSON.stringify(contributions));
 
     // Update streak
     const user = storage.getUser();

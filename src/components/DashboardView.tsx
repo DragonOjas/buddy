@@ -43,23 +43,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSelectChat,
   onOpenQuiz,
 }) => {
-  // Weekly goals loaded from localStorage or user goals
+  // Weekly goals are isolated per account and start empty for new users.
   const [weeklyGoals, setWeeklyGoals] = useState<Array<{ id: string; text: string; completed: boolean }>>(() => {
     try {
-      const stored = localStorage.getItem('buddy_weekly_goals');
+      const stored = localStorage.getItem(`buddy_weekly_goals_${user.id}`);
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    return [
-      { id: 'g1', text: 'Complete a practice quiz on your target topic', completed: false },
-      { id: 'g2', text: 'Chat with Buddy to clarify a difficult concept', completed: false },
-    ];
+    return [];
   });
 
   const [newGoalInput, setNewGoalInput] = useState('');
 
   const saveGoals = (goals: Array<{ id: string; text: string; completed: boolean }>) => {
     setWeeklyGoals(goals);
-    localStorage.setItem('buddy_weekly_goals', JSON.stringify(goals));
+    localStorage.setItem(`buddy_weekly_goals_${user.id}`, JSON.stringify(goals));
   };
 
   const toggleGoal = (id: string) => {

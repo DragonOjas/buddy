@@ -102,10 +102,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             goals: goals,
             favorite_subjects: 'Math, Computer Science',
             interests: 'Coding, Science, Problem Solving',
-            streak_days: 1,
-            longest_streak: 1,
-            total_study_minutes: 15,
-            total_messages: 5,
+            streak_days: 0,
+            longest_streak: 0,
+            total_study_minutes: 0,
+            total_messages: 0,
             created_at: new Date().toISOString(),
           };
 
@@ -124,11 +124,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           }
 
           const existing = storage.getUser();
+          const signedInUserId = res.user?.id || existing.id;
+          const isSameAccount = existing.id === signedInUserId;
           const updatedUser: UserProfile = {
-            ...existing,
-            id: res.user?.id || existing.id,
+            ...(isSameAccount ? existing : {
+              id: signedInUserId,
+              name: (res.user?.user_metadata as any)?.name || email.split('@')[0],
+              email: res.user?.email || email,
+              avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`,
+              grade: 'High School',
+              goals: '',
+              favorite_subjects: '',
+              interests: '',
+              streak_days: 0,
+              longest_streak: 0,
+              total_study_minutes: 0,
+              total_messages: 0,
+              created_at: new Date().toISOString(),
+            }),
+            id: signedInUserId,
             email: res.user?.email || email,
-            name: (res.user?.user_metadata as any)?.name || existing.name || email.split('@')[0],
+            name: (res.user?.user_metadata as any)?.name || (isSameAccount ? existing.name : email.split('@')[0]),
           };
 
           storage.saveUser(updatedUser);
@@ -140,15 +156,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         }
       } else {
         // Local / Offline Auth Mode (fallback when Supabase keys not in .env)
-        const currentUser = storage.getUser();
         const updatedUser: UserProfile = {
-          ...currentUser,
           id: `usr_${Date.now()}`,
-          name: mode === 'signup' ? name || 'Student' : currentUser.name || email.split('@')[0],
+          name: mode === 'signup' ? name || 'Student' : email.split('@')[0],
           email: email,
-          grade: mode === 'signup' ? grade : currentUser.grade,
-          goals: mode === 'signup' ? goals : currentUser.goals,
+          grade: mode === 'signup' ? grade : 'High School',
+          goals: mode === 'signup' ? goals : '',
+          favorite_subjects: '',
+          interests: '',
           avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name || email)}`,
+          streak_days: 0,
+          longest_streak: 0,
+          total_study_minutes: 0,
+          total_messages: 0,
+          created_at: new Date().toISOString(),
         };
 
         storage.saveUser(updatedUser);
@@ -175,11 +196,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } else {
       // Local demo Google login
       const googleUser: UserProfile = {
-        ...storage.getUser(),
         id: `usr_google_${Date.now()}`,
         name: 'Alex Rivera',
         email: 'alex.rivera@gmail.com',
         avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        grade: 'High School',
+        goals: '',
+        favorite_subjects: '',
+        interests: '',
+        streak_days: 0,
+        longest_streak: 0,
+        total_study_minutes: 0,
+        total_messages: 0,
+        created_at: new Date().toISOString(),
       };
       storage.saveUser(googleUser);
       onAuthSuccess(googleUser);

@@ -50,7 +50,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
   const [voiceVolume, setVoiceVolume] = useState(true);
-  const [requireWakeWord, setRequireWakeWord] = useState(true);
+  const [requireWakeWord, setRequireWakeWord] = useState(false);
   const [micErrorMessage, setMicErrorMessage] = useState<string | null>(null);
   const [isDirectRecording, setIsDirectRecording] = useState(false);
   const [typedInput, setTypedInput] = useState('');
@@ -202,6 +202,10 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           setMicErrorMessage('Microphone access denied. Tap the mic button below to record directly.');
         } else if (err.includes('network')) {
           setMicErrorMessage('Browser speech recognition network issue. Tap the mic button below to talk directly.');
+        } else if (err.includes('not supported')) {
+          setMicErrorMessage('Speech recognition is not supported here. Tap the mic button below to record directly.');
+        } else {
+          setMicErrorMessage('Voice recognition stopped. Tap the mic button below to try direct recording.');
         }
       },
       () => {
@@ -413,6 +417,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     }
 
     if (!SpeechManager.isSpeechSynthesisSupported()) {
+      setMicErrorMessage('Browser voice playback is unavailable. You can still use the microphone or type below.');
       if (isMountedRef.current && isOpen && !isMuted && SpeechManager.isSpeechRecognitionSupported()) {
         startMic();
       }

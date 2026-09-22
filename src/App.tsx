@@ -147,26 +147,26 @@ export default function App() {
     };
   }, [voiceSettings.wakeWordEnabled, isAuthenticated, guestMessageCount]);
 
-  // Initialize chats on first mount
+  // Start a new session on every page load while keeping previous chats saved.
   useEffect(() => {
-    let savedChats = storage.getChats();
-    if (savedChats.length === 0) {
-      // Create initial welcoming chat
-      const welcomeChat = storage.createChat('Welcome to Buddy! 🤖', 'auto');
-      savedChats = [welcomeChat];
+    const hasPreviousChats = storage.getChats().length > 0;
+    const newChat = storage.createChat(hasPreviousChats ? 'New Chat' : 'Welcome to Buddy! 🤖', 'auto');
+
+    if (!hasPreviousChats) {
       storage.addMessage(
-        welcomeChat.id,
+        newChat.id,
         'assistant',
         `Hey there! 👋 I'm **Buddy**, your personal AI friend, teacher, homework helper, coding partner, and study coach.\n\nAsk me anything to get started:\n- 📐 *"Help me solve this calculus derivative step-by-step"*\n- 💻 *"Debug my Python function or explain React hooks"*\n- 🎯 *"Create a 5-day study plan for physics finals"*\n- 🎙️ *"Talk to me about life balance and exam stress"*\n\nWhat are you working on today?`,
         'friend'
       );
     }
 
+    const savedChats = storage.getChats();
     setChats(savedChats);
-    const activeId = savedChats[0].id;
+    const activeId = newChat.id;
     setCurrentChatId(activeId);
     setMessages(storage.getMessages(activeId));
-    setCurrentMode(savedChats[0].mode || 'auto');
+    setCurrentMode(newChat.mode || 'auto');
   }, []);
 
   // Update current messages when active chat changes
@@ -186,6 +186,8 @@ export default function App() {
         ? 'Friendly Catch-Up'
         : mode === 'coding'
         ? 'Coding Session'
+        : mode === 'python'
+        ? 'Python Practice'
         : mode === 'homework'
         ? 'Homework Help'
         : mode === 'exam_prep'
@@ -277,9 +279,10 @@ export default function App() {
       id: assistantMsgId,
       chat_id: currentChatId,
       role: 'assistant',
-      content: '',
+      content: 'Buddy is thinking...',
       detected_mode: currentMode,
       created_at: new Date().toISOString(),
+      isStreaming: true,
     };
 
     setMessages(prev => [...prev, initialAssistantMsg]);
@@ -355,6 +358,7 @@ export default function App() {
                           content: accumulatedContent,
                           detected_mode: detectedMode,
                           sources: citedSources,
+                          isStreaming: true,
                         }
                       : m
                   )
@@ -382,6 +386,10 @@ export default function App() {
         undefined,
         citedSources.length > 0 ? citedSources : undefined
       );
+
+      // Automatic learning nudges: generate a short quiz when the topic is clearly academic.
+      const promptContext = `${text}\n${accumulatedContent}`;
+      triggerAutoQuiz(promptContext);
 
       // Auto-read response if enabled
       if (voiceSettings.autoReadResponses && accumulatedContent) {
@@ -412,6 +420,11 @@ export default function App() {
       );
       storage.addMessage(currentChatId, 'assistant', fallbackContent, currentMode);
     } finally {
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === `msg_${Date.now()}` ? m : m
+        )
+      );
       setIsStreaming(false);
     }
   };
@@ -452,6 +465,48 @@ export default function App() {
     setQuizSubject(subject);
     setQuizTopic(topic);
     setIsQuizOpen(true);
+  };
+
+  const detectAutoQuizTopic = (input: string): { subject: string; topic: string } | null => {
+    const text = input.toLowerCase();
+
+    if (/(derivative|integral|limit|tangent|calculus|chain rule|differentiation)/.test(text)) {
+      return { subject: 'Calculus', topic: 'Derivatives, Limits & Problem Solving' };
+    }
+    if (/(python|pandas|numpy|loop|dictionary|list|tuple|function|class|debugging)/.test(text)) {
+      return { subject: 'Python', topic: 'Python Fundamentals & Debugging' };
+    }
+    if (/(physics|force|motion|energy|kinematics|newton|momentum)/.test(text)) {
+      return { subject: 'Physics', topic: 'Physics Concepts & Problem Solving' };
+    }
+    if (/(chemistry|molecule|reaction|atom|equilibrium|acid|base)/.test(text)) {
+      return { subject: 'Chemistry', topic: 'Chemistry Core Concepts' };
+    }
+    if (/(algebra|equation|quadratic|matrix|polynomial|factor)/.test(text)) {
+      return { subject: 'Mathematics', topic: 'Algebra & Algebraic Thinking' };
+    }
+    if (/(biology|cell|genetics|ecosystem|photosynthesis|dna)/.test(text)) {
+      return { subject: 'Biology', topic: 'Biology Fundamentals & Recall' };
+    }
+
+    return null;
+  };
+
+  const triggerAutoQuiz = (input: string) => {
+    const quizSuggestion = detectAutoQuizTopic(input);
+    if (!quizSuggestion) return;
+
+    const now = Date.now();
+    const key = `buddy_auto_quiz_${quizSuggestion.subject}`;
+    const lastTrigger = Number(localStorage.getItem(key) || '0');
+    const cooldownMs = 1000 * 60 * 30;
+
+    if (now - lastTrigger < cooldownMs) return;
+
+    localStorage.setItem(key, String(now));
+    setTimeout(() => {
+      handleOpenQuiz(quizSuggestion.subject, quizSuggestion.topic);
+    }, 1200);
   };
 
   const handleSignOut = async () => {
@@ -580,6 +635,7 @@ export default function App() {
               <div className="w-6" />
             </header>
             <DashboardView
+              key={user.id}
               user={user}
               studyProgress={studyProgress}
               achievements={achievements}
@@ -628,9 +684,16 @@ export default function App() {
           setUser(authUser);
           setIsAuthenticated(true);
           localStorage.setItem('buddy_auth_status', 'authenticated');
+          const newChat = storage.createChat('New Chat', 'auto');
+          setChats(storage.getChats());
+          setCurrentChatId(newChat.id);
+          setCurrentMode('auto');
+          setMessages([]);
           setMemories(storage.getMemories());
           setStudyProgress(storage.getStudyProgress());
+          setAchievements(storage.getAchievements());
           setContributions(storage.getContributions());
+          setCurrentView('chat');
           setIsAuthModalOpen(false);
         }}
       />

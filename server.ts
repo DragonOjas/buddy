@@ -54,6 +54,20 @@ function detectIntent(message: string, hasAttachment: boolean): string {
     return 'homework';
   }
   if (
+    lower.includes('python') ||
+    lower.includes('pandas') ||
+    lower.includes('numpy') ||
+    lower.includes('flask') ||
+    lower.includes('django') ||
+    lower.includes('asyncio') ||
+    lower.includes('list comprehension') ||
+    lower.includes('data frame') ||
+    lower.includes('virtualenv') ||
+    lower.includes('pip install')
+  ) {
+    return 'python';
+  }
+  if (
     lower.includes('def ') ||
     lower.includes('function') ||
     lower.includes('const ') ||
@@ -64,7 +78,6 @@ function detectIntent(message: string, hasAttachment: boolean): string {
     lower.includes('syntax') ||
     lower.includes('bug') ||
     lower.includes('debug') ||
-    lower.includes('python') ||
     lower.includes('javascript') ||
     lower.includes('typescript') ||
     lower.includes('react') ||
@@ -188,10 +201,19 @@ CURRENT ACTIVE ROLE: TEACHER MODE
       return `${basePersona}
 
 CURRENT ACTIVE ROLE: CODING ASSISTANT
-- Expert in TypeScript, JavaScript, React, Next.js, Python, HTML/CSS, algorithms, and data structures.
+- Expert in TypeScript, JavaScript, React, Next.js, HTML/CSS, algorithms, and data structures.
 - Write clean, modern, well-commented code following best practices.
 - When debugging, pinpoint the exact line, explain the root cause clearly, and show the before/after fix.
 - Mention time/space complexity and edge cases when discussing algorithms.`;
+
+    case 'python':
+      return `${basePersona}
+
+CURRENT ACTIVE ROLE: PYTHON SPECIALIST
+- Expert in Python, Pythonic idioms, data structures, OOP, functional programming, and debugging.
+- Help with loops, comprehensions, classes, decorators, file I/O, APIs, pandas, NumPy, and Flask/Django patterns.
+- Explain Python concepts with clarity and highlight real-world use cases, common pitfalls, and best practices.
+- When solving problems, give a step-by-step walkthrough and a clean, tested Python implementation.`;
 
     case 'exam_prep':
       return `${basePersona}
@@ -226,7 +248,11 @@ function generateOfflineResponse(
     return `Hey ${userName}! 👋 Great to connect with you! I'm **Buddy**, your personal AI study coach, coding partner, and academic mentor.\n\nWhether you need step-by-step homework help, concept explanations, coding debugging, or exam prep, I'm right here with you.\n\n*What topic or project are we tackling today?*`;
   }
 
-  if (mode === 'coding' || lower.includes('code') || lower.includes('python') || lower.includes('javascript') || lower.includes('react')) {
+  if (mode === 'python' || lower.includes('python') || lower.includes('pandas') || lower.includes('numpy') || lower.includes('flask')) {
+    return `### 🐍 Python Solution & Breakdown\n\nHere is a clean Python implementation for **${userName}**:\n\n\`\`\`python\ndef solve_problem(data):\n    if not data:\n        return []\n\n    cleaned = [item.strip().lower() for item in data if item and item.strip()]\n    return sorted(set(cleaned))\n\n# Example\nprint(solve_problem(["Python", "python", "Buddy", "buddy"]))\n\`\`\`\n\n**Key Takeaways:**\n- ⚡ **Time Complexity:** $O(n)$ for the main pass\n- 💾 **Space Complexity:** $O(n)$ for the deduplicated result\n- 🛡️ **Edge Cases:** Empty input, whitespace-only values, and repeated entries are handled safely.\n\n*Want me to explain the logic line by line or turn this into a pandas/NumPy version?*`;
+  }
+
+  if (mode === 'coding' || lower.includes('code') || lower.includes('javascript') || lower.includes('react')) {
     return `### 💻 Coding Solution & Breakdown\n\nHere is a clean, modern implementation for **${userName}**:\n\n\`\`\`typescript\n// Solution by Buddy AI\nexport function solveProblem(input: string): { success: boolean; result: string } {\n  console.log('Processing input:', input);\n  return {\n    success: true,\n    result: input.trim().toLowerCase(),\n  };\n}\n\`\`\`\n\n**Key Takeaways:**\n- ⚡ **Time Complexity:** $O(n)$ linear scan\n- 💾 **Space Complexity:** $O(1)$ auxiliary space\n- 🛡️ **Edge Cases:** Handles empty inputs and unusual characters safely.\n\n*Would you like me to walk through the unit tests or explain any line step-by-step?*`;
   }
 
@@ -780,7 +806,7 @@ app.post('/api/voice/transcribe', async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      model: GEMINI_MODEL,
       contents: [
         {
           inlineData: {

@@ -77,6 +77,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+  const [typedTextMap, setTypedTextMap] = useState<Record<string, string>>({});
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -91,6 +92,36 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages, isStreaming]);
+
+  useEffect(() => {
+    const timers: number[] = [];
+
+    messages.forEach((msg) => {
+      if (msg.role !== 'assistant') return;
+      const target = msg.content || 'Buddy is thinking...';
+      const current = typedTextMap[msg.id] ?? '';
+
+      if (msg.isStreaming) {
+        if (current !== target) {
+          const nextLength = Math.min(current.length + 1, target.length);
+          const nextText = target.slice(0, nextLength);
+
+          const timer = window.setTimeout(() => {
+            setTypedTextMap(prev => ({ ...prev, [msg.id]: nextText }));
+          }, 18);
+          timers.push(timer);
+        }
+      } else {
+        if (typedTextMap[msg.id] !== target) {
+          setTypedTextMap(prev => ({ ...prev, [msg.id]: target }));
+        }
+      }
+    });
+
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [messages, typedTextMap]);
 
   // Adjust textarea height
   useEffect(() => {
@@ -271,6 +302,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         return (
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
             <Code2 className="w-3 h-3" /> Coding Partner
+          </span>
+        );
+      case 'python':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+            <Code2 className="w-3 h-3" /> Python Tutor
           </span>
         );
       case 'exam_prep':
@@ -462,7 +499,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   ) : isUser ? (
                     <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                   ) : (
-                    <MarkdownView content={msg.content} />
+                    <div>
+                      <MarkdownView content={typedTextMap[msg.id] ?? msg.content ?? 'Buddy is thinking...'} />
+                      {msg.isStreaming && <span className="buddy-typing-cursor" aria-hidden="true" />}
+                    </div>
                   )}
                 </div>
 
@@ -571,23 +611,6 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           );
         })}
 
-        {/* Typing Indicator */}
-        {isStreaming && (
-          <div className="flex items-start gap-3 max-w-4xl mx-auto animate-in fade-in">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-blue-500 p-0.5 shadow-md">
-              <div className="w-full h-full bg-[#0a0e1a] rounded-[10px] flex items-center justify-center">
-                <Bot className="w-4 h-4 text-purple-400 animate-spin" />
-              </div>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-[#0f1422] border border-slate-800 text-xs text-purple-300 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-              <span className="text-slate-400 ml-1">Buddy is thinking & formulating guidance...</span>
-            </div>
-          </div>
-        )}
-
         <div ref={messagesEndRef} />
       </div>
 
@@ -649,7 +672,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             onKeyDown={handleKeyDown}
             placeholder={
               currentMode === 'coding'
-                ? 'Ask to debug code, explain algorithms, or write a React/Python solution...'
+                ? 'Ask to debug code, explain algorithms, or write a React solution...'
+                : currentMode === 'python'
+                ? 'Ask Python questions, debug scripts, or build data/automation solutions...'
                 : currentMode === 'homework'
                 ? 'Ask a homework question or upload a photo of your assignment...'
                 : currentMode === 'exam_prep'
