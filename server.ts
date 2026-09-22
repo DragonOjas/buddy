@@ -8,7 +8,7 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
 // Middleware for parsing JSON with generous limit for images/PDF attachments
 app.use(express.json({ limit: '50mb' }));
