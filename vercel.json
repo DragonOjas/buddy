@@ -12,7 +12,8 @@
   ],
   "functions": {
     "api/[...path].ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "runtime": "nodejs20.x"
     }
   }
 }
