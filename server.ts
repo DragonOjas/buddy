@@ -8,7 +8,7 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 // Middleware for parsing JSON with generous limit for images/PDF attachments
 app.use(express.json({ limit: '50mb' }));
@@ -265,6 +265,13 @@ function generateOfflineResponse(
   }
 
   return `Hey ${userName}! That is an intriguing question. As your study companion, I'm analyzing the details:\n\n- **Key Point 1:** Always start from the fundamental principles.\n- **Key Point 2:** Break large goals into manageable 25-minute Pomodoro focus blocks.\n- **Key Point 3:** Practice active recall rather than passive re-reading.\n\n*(Note: Add your free \`GEMINI_API_KEY\` in your \`.env\` file for full live Gemini 2.5 Flash responses!)*\n\nWhat would you like to explore next?`;
+}
+
+function generateVoiceFallback(message: string, userName = 'Friend'): string {
+  const prompt = message.trim();
+  if (!prompt) return `I am here with you, ${userName}. What would you like to talk about?`;
+
+  return `I am still here with you, ${userName}. I heard you ask about ${prompt}. I cannot reach the live AI service right now, but we can keep going: tell me a little more and I will help you work through it.`;
 }
 
 // 1. Streaming Chat Endpoint (Server-Sent Events)
@@ -735,7 +742,15 @@ CRITICAL RULES FOR REAL-TIME VOICE CALL:
     }
 
     if (!response) {
-      throw lastError || new Error('Voice response unavailable');
+      console.warn('Voice AI unavailable, using offline voice reply:', lastError);
+      const fallbackReply = generateVoiceFallback(message, userName);
+      return res.json({
+        reply: fallbackReply,
+        mode: 'friend',
+        audioBase64: null,
+        hasServerAudio: false,
+        offline: true,
+      });
     }
 
     const reply = response.text?.trim() || "Hey! I heard you loud and clear. What would you like to explore next?";
@@ -800,9 +815,12 @@ CRITICAL RULES FOR REAL-TIME VOICE CALL:
     });
   } catch (err: any) {
     console.error('Voice chat endpoint error:', err);
-    return res.status(500).json({ 
-      reply: "I'm right here with you! Could you say that one more time?", 
-      error: err.message 
+    return res.json({
+      reply: generateVoiceFallback(req.body?.message || '', req.body?.userProfile?.name || 'Friend'),
+      mode: 'friend',
+      audioBase64: null,
+      hasServerAudio: false,
+      offline: true,
     });
   }
 });

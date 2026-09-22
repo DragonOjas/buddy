@@ -341,11 +341,10 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get voice reply');
-      }
-
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get voice reply');
+      }
       const replyText = data.reply || "I'm right here with you! Tell me more.";
 
       setConversationHistory(prev => [...prev, { role: 'assistant' as const, content: replyText }]);
@@ -360,7 +359,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       }
     } catch (err: any) {
       console.error('Voice call error:', err);
-      const fallback = `Sorry ${user.name}, I missed that for a moment. Could you say it again?`;
+      const fallback = `I am still here, ${user.name}. I heard you, but the live AI service is temporarily unavailable. Please try again in a moment.`;
       speakBuddyReply(fallback);
     } finally {
       isProcessingRef.current = false;
