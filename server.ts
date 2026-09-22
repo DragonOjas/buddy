@@ -271,7 +271,18 @@ function generateVoiceFallback(message: string, userName = 'Friend'): string {
   const prompt = message.trim();
   if (!prompt) return `I am here with you, ${userName}. What would you like to talk about?`;
 
-  return `I am still here with you, ${userName}. I heard you ask about ${prompt}. I cannot reach the live AI service right now, but we can keep going: tell me a little more and I will help you work through it.`;
+  const mode = detectIntent(prompt, false);
+  if (mode === 'coding' || mode === 'python') {
+    return `For ${prompt}, start by identifying the input, expected output, and the smallest test case. Then we can trace the logic step by step, ${userName}. What part is giving you trouble?`;
+  }
+  if (mode === 'homework' || mode === 'exam_prep') {
+    return `For ${prompt}, first write down what you know and what you need to find. Then choose the rule or formula that connects them, and we will solve one step at a time together, ${userName}.`;
+  }
+  if (mode === 'teacher') {
+    return `${prompt} is easiest to understand by starting with the core idea, then connecting it to a simple example. Tell me which part feels confusing and I will explain it in plain language, ${userName}.`;
+  }
+
+  return `About ${prompt}, the best next step is to break the question into one clear goal and one small action. Tell me what outcome you want, ${userName}, and I will help you work it through.`;
 }
 
 // 1. Streaming Chat Endpoint (Server-Sent Events)
